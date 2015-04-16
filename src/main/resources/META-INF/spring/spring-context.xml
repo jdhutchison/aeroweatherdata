@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xmlns:camel="http://camel.apache.org/schema/spring"
+       xmlns:osgix="http://www.springframework.org/schema/osgi-compendium"
+       xmlns:util="http://www.springframework.org/schema/util"
+
+       xsi:schemaLocation="
+       http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-2.0.xsd
+       http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd
+       http://camel.apache.org/schema/spring http://camel.apache.org/schema/spring/camel-spring.xsd
+       http://www.springframework.org/schema/osgi-compendium http://www.springframework.org/schema/osgi-compendium/spring-osgi-compendium.xsd
+       http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util-3.0.xsd">
+
+    <bean class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer">
+        <property name="ignoreUnresolvablePlaceholders" value="true"/>
+        <property name="systemPropertiesModeName" value="SYSTEM_PROPERTIES_MODE_OVERRIDE"/>
+        <property name="ignoreResourceNotFound" value="true"/>
+        <property name="locations">
+            <list>
+                <value>classpath:weatherdata.properties</value>
+            </list>
+        </property>
+    </bean>
+
+    <context:annotation-config/>
+    <context:component-scan base-package="weatherdata"/>
+
+
+    <util:map id="sourceUris">
+        <entry key="#{T(weatherdata.DataSource).AIRCRAFTREPORT}" value="${datasource.uri.aircraftreport}" />
+        <entry key="#{T(weatherdata.DataSource).AIRSIGMET}" value="${datasource.uri.airsigmet}" />
+        <entry key="#{T(weatherdata.DataSource).METAR}" value="${datasource.uri.metar}" />
+        <entry key="#{T(weatherdata.DataSource).STATION}" value="${datasource.uri.station}" />
+        <entry key="#{T(weatherdata.DataSource).TAF}" value="${datasource.uri.taf}" />
+    </util:map>
+
+
+    <util:map id="hoursPast">
+        <entry key="#{T(weatherdata.DataSource).AIRCRAFTREPORT}" value="${datasource.timerange.aircraftreport}" />
+        <entry key="#{T(weatherdata.DataSource).AIRSIGMET}" value="${datasource.timerange.airsigmet}" />
+        <entry key="#{T(weatherdata.DataSource).METAR}" value="${datasource.timerange.metar}" />
+        <entry key="#{T(weatherdata.DataSource).TAF}" value="${datasource.timerange.taf}" />
+    </util:map>
+
+    <bean id="routeBuilder" class="weatherdata.WeatherDataRouteBuilder">
+        <property name="routeSchedule" value="${schedule.cron}" />
+        <property name="messageQueue" value="${message.queue.endpoint}" />
+        <property name="dataSourceUris" ref="sourceUris" />
+        <property name="dataSourceTimeRanges" ref="hoursPast" />
+    </bean>
+
+    <camel:camelContext id="weatherDataCamelContext">
+        <camel:routeBuilder ref="routeBuilder" />
+    </camel:camelContext>
+
+</beans>

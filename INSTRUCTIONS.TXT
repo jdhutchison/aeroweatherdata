@@ -1,0 +1,87 @@
+1. OVERVIEW
+This Maven module will create a simple deployable bundle for Apache Servicemix.
+
+There are five main Camel routes defined (see the source of
+WeatherDataRouteBuilder.java for more details). Each route corresponds to a
+different source of data on http://weather.areo. Each data source (URI provided) is
+given an id:
+
+AIRCRAFTREPORT
+AIRSIGMET
+METAR
+STATION
+TAF
+
+These IDs are used as message queue topics.
+
+The Camel route for each data source is called according to a defined schedule, and all
+are called simultaneously when the schedule triggers route execution. Each URI is downloaded,
+converted into a different Java object (corresponding to each data source), which is then
+converted into JSON, which is dispatched to the message queue.
+
+The object is not used, but is available if you wish to adapt the routes later on (the
+appropriate place on each route to access to the object is marked with the annotation
+"<- POJO available here".
+
+2. CONFIGURATION
+The configuration is currently set to the parameters you requested (1 hour schedule, obtaining
+data from 1 hour back). Configuration is kept in the file src/main/resources/weatherdata.properties.
+
+Anything that can be configued can be changed here:
+- Which URLs to call
+- The "hoursBeforeNow" parameter values
+- The URI of the Active MQ instance
+- How often data is fetched (the schedule)
+
+The file has some comments to help explain each configuration setting.
+
+Please note that any configuration changes will not take effect until the Module has been
+re-built and re-deployed as per the next sections.
+
+3. BUILDING
+This section assumes that Maven and a version of the JDK are installed and working.
+
+To build the weatherdata module as maven project go to the directory where the module has
+been unzipped (the same one this document is in) in a shell or command promot and enter
+the command:
+
+mvn clean install
+
+This will build the module and make it available to be imported into ServiceMix.
+
+4. DEPLOYMENT
+
+This section assumes ServiceMix is running, and the Weatherdata Module has been built.
+
+The first time the module is deployed, the dependencies for the module need to be installed
+as well. Open up the ServiceMix console and enter the following commands:
+
+features:install camel-quartz2
+features:install camel-http
+features:install camel-jackson
+features:install camel-jaxb
+
+Once these have been added you can install the module into ServiceMix with the command:
+
+install mvn:weatherdata/weatherdata/1.0
+
+This will give you the Bundle ID within ServiceMix. To start the Module running use
+the command:
+
+start <Bundle ID>
+
+And to stop the bundle working enter:
+
+stop <Bundle ID>
+
+5. LOGGING AND ERRORS
+There is a simple logging statement that gets entered into the ServiceMix log (depending on
+any log settings) that will indicate that the data is about to be fetched for all services.
+There is no further logging if everything is successful.
+
+If there is some sort of error or problem (for example the weather.areo site is down and
+data is unavailable) then a full stack trace will be written to the ServiceMix logs to allow
+for debugging. Errors are not handled explicitly as any error is likely to require some
+investigation.
+
+Let me know if more logging or error handling is required. 
